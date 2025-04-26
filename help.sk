@@ -29,6 +29,7 @@ function TokeniseLine(line: string, id: integer=randomId()) :: object:
 	set {SP::Lines::%{_id}%::RawString} to {_line}
 	
 	TokeniseLinePart({_line}, {_id}, 0, 0, {_tokens})
+	wait 2 ticks
 	loop reversed {SP::Lines::%{_id}%::Tokens::*}:
 		broadcast "%nl%--- Token ---"
 		broadcast "Type: %GetTokenType(loop-value)%"
@@ -41,9 +42,9 @@ function TokeniseLine(line: string, id: integer=randomId()) :: object:
 		set {_type} to GetTokenType(loop-value)
 		
 		set {_line} to join {_line}.substring(0, {_start}), "%%%{_type}%%%", {_line}.substring({_end})
-		
-	broadcast "%nl%Tokenised: &c%{_line}%"
 	
+	broadcast "%nl%Tokenised: &c%{_line}%"
+		
 function TokeniseLinePart(line: string, id: number, start: integer, end: integer, iteration: number=0):
 	create new section stored in {_run}:
 		if {_start} > (length of {_line}):
@@ -109,6 +110,9 @@ function MatchLinePart(id: number, s: string) :: nbt compound:
 						replace all """""" in {_v} with """"
 						return NewToken("string", {_v}, {_start}, {_end})
 		
+function MatchTokensToSyntax(id: number, syntaxType: string):
+	loop (indexes of {SP::Lang::%{_syntaxType}%::*}):
+		set {_pattern} to {SP::Lang::%{_syntaxType}%::%loop-value%::Pattern}
 		
 function TokeniseLines(a: strings):
 	loop {_a::*}:
@@ -133,7 +137,7 @@ on load:
 	RegisterExpression("all players", "players", true)
 	
 	set {start} to now
-	set {_toParse} to "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-	#set {_toParse} to "send ""hello world"" to all players"
+	#set {_toParse} to "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	set {_toParse} to "send ""hello world"" to all players"
 	TokeniseLines({_toParse})
 	
