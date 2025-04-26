@@ -45,30 +45,35 @@ function TokeniseLine(line: string, id: integer=randomId()) :: object:
 	broadcast "%nl%Tokenised: &c%{_line}%"
 	
 function TokeniseLinePart(line: string, id: number, start: integer, end: integer, iteration: number=0):
-	
-	if {_start} > (length of {_line}):
-		stop
+	create new section stored in {_run}:
+		if {_start} > (length of {_line}):
+			broadcast "&aParsed in %difference between now and {start}%"
+			broadcast "Iterations required: %{_iteration}%"
+			stop
+			
+		add 1 to {_iteration}
+		if {_iteration} > 1000000:
+			broadcast "&aParsed in %difference between now and {start}%"
+			broadcast "Iterations required && too many: %{_iteration}%"
+			stop
+			
+		set {SP::Lines::%{_id}%::Start} to {_start}
+		set {SP::Lines::%{_id}%::End} to {_end}
 		
-	add 1 to {_iteration}
-	if {_iteration} > 1000:
-		stop
+		set {_part} to {_line}.substring({_start}, {_end})
+		set {_matchToken} to MatchLinePart({_id}, {_part})
 		
-	set {SP::Lines::%{_id}%::Start} to {_start}
-	set {SP::Lines::%{_id}%::End} to {_end}
-	
-	set {_part} to {_line}.substring({_start}, {_end})
-	set {_matchToken} to MatchLinePart({_id}, {_part})
-	
-	if {_matchToken} is set:
-		set {_start} to {_end}
-		add {_matchToken} to {SP::Lines::%{_id}%::Tokens::*}
-	else:
-		add 1 to {_end}
-		if {_end} >= (length of {_line} + 1):
-			add 1 to {_start}
-			set {_end} to {_start}
-		
-	TokeniseLinePart({_line}, {_id}, {_start}, {_end}, {_iteration})
+		if {_matchToken} is set:
+			set {_start} to {_end}
+			add {_matchToken} to {SP::Lines::%{_id}%::Tokens::*}
+		else:
+			add 1 to {_end}
+			if {_end} >= (length of {_line} + 1):
+				add 1 to {_start}
+				set {_end} to {_start}
+			
+		TokeniseLinePart({_line}, {_id}, {_start}, {_end}, {_iteration})
+	run section {_run} sync
 	
 function CanPeek(id: number) :: boolean:
 	return false if {SP::Lines::%{_id}%::End} >= (length of {SP::Lines::%{_id}%::RawString}) else true
@@ -109,8 +114,26 @@ function TokeniseLines(a: strings):
 	loop {_a::*}:
 		TokeniseLine(loop-value)
 	
-on load:
+function RegisterEffect(pattern: string, id: number=randomId()):
+	set {SP::Lang::Effects::%{_id}%::Pattern} to {_pattern}
 	
+function RegisterExpression(pattern: string, type: string, isPlural: boolean=false, id: number=randomId()):
+	set {SP::Lang::Expressions::%{_id}%::Pattern} to {_pattern}
+	set {SP::Lang::Expressions::%{_id}%::Type} to {_type}
+	set {SP::Lang::Expressions::%{_id}%::IsPlural} to {_isPlural}
+	
+function WorsePossibleCase(lineLength: number) :: number:
+	return ({_lineLength} + 1) * ({_lineLength} + 2) / 2
 
-	set {_toParse} to "broadcast ""hello world"""
+	
+on load:
+	delete {SP::*}
+	
+	RegisterEffect("broadcast %%string%% to %%players%%")
+	RegisterExpression("all players", "players", true)
+	
+	set {start} to now
+	set {_toParse} to "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	#set {_toParse} to "send ""hello world"" to all players"
 	TokeniseLines({_toParse})
+	
